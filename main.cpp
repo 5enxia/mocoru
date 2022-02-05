@@ -35,7 +35,7 @@ void setupGidMap(gid_t gid) {
 	gid_map_file.close();
 }
 
-int main(int argc, char const **argv)
+void run()
 {
 	// user
 	uid_t uid = geteuid();
@@ -44,16 +44,31 @@ int main(int argc, char const **argv)
 	printf("%d\n", gid);
 
 	// unshare
-	int flags = CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWUSER;
+	int flags = CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWUSER | CLONE_NEWUTS;
 	unshare(flags);
 
 	setupUidMap(uid);
 	setupGidMap(gid);
 
 	// exec
-	const char *path = "/bin/sh";
-	char *const *argv2;
-	execv(path, argv2);
+	execl("/proc/self/exe", "init");
 
+}
+
+void initContainer() {
+	sethostname("container", 9);
+	execl("/bin/sh", "");
+}
+
+
+int main(int argc, const char **argv)
+{
+	std::string argv1 = std::string(argv[1]);
+	if (argv1 == "run") {
+		run();
+	}
+	else if (argv1 == "init") {
+		initContainer();
+	}
 	return 0;
 }
