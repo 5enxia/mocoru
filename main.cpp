@@ -5,6 +5,8 @@
 #include <string>
 #include <fstream>
 
+int err;
+
 void readUidMap() {
 	std::string uid_map_fn= "/proc/self/uid_map";
 	std::ifstream uid_map_file;
@@ -51,23 +53,31 @@ void run()
 	setupGidMap(gid);
 
 	// exec
+	// char *const argv[] = {"/proc/self/exe", "init"};
 	execl("/proc/self/exe", "init");
 
 }
 
 void initContainer() {
-	sethostname("container", 9);
-	execl("/bin/sh", "");
+	std::cout << "here" << std::endl;
+	size_t len = sizeof(char);
+	err = sethostname("container", len*9);
+	std::cout << err << std::endl;
+	char *const argv[] = {"/bin/sh", ""};
+	execv("/bin/sh", argv);
 }
 
 
 int main(int argc, const char **argv)
 {
 	std::string argv1 = std::string(argv[1]);
+	std::cout << argv1 << std::endl;
 	if (argv1 == "run") {
+		std::cout << "if" << std::endl;
 		run();
 	}
-	else if (argv1 == "init") {
+	if (argv1 == "init") {
+		std::cout << "elif" << std::endl;
 		initContainer();
 	}
 	return 0;
