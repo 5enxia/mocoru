@@ -5,6 +5,8 @@
 #include <string>
 #include <fstream>
 
+int err;
+
 void readUidMap() {
 	std::string uid_map_fn= "/proc/self/uid_map";
 	std::ifstream uid_map_file;
@@ -35,7 +37,7 @@ void setupGidMap(gid_t gid) {
 	gid_map_file.close();
 }
 
-int main(int argc, char const **argv)
+void run()
 {
 	// user
 	uid_t uid = geteuid();
@@ -44,16 +46,39 @@ int main(int argc, char const **argv)
 	printf("%d\n", gid);
 
 	// unshare
-	int flags = CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWUSER;
+	int flags = CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWUSER | CLONE_NEWUTS;
 	unshare(flags);
 
 	setupUidMap(uid);
 	setupGidMap(gid);
 
 	// exec
-	const char *path = "/bin/sh";
-	char *const *argv2;
-	execv(path, argv2);
+	// char *const argv[] = {"/proc/self/exe", "init"};
+	execl("/proc/self/exe", "init");
 
+}
+
+void initContainer() {
+	std::cout << "here" << std::endl;
+	size_t len = sizeof(char);
+	err = sethostname("container", len*9);
+	std::cout << err << std::endl;
+	char *const argv[] = {"/bin/sh", ""};
+	execv("/bin/sh", argv);
+}
+
+
+int main(int argc, const char **argv)
+{
+	std::string argv1 = std::string(argv[1]);
+	std::cout << argv1 << std::endl;
+	if (argv1 == "run") {
+		std::cout << "if" << std::endl;
+		run();
+	}
+	if (argv1 == "init") {
+		std::cout << "elif" << std::endl;
+		initContainer();
+	}
 	return 0;
 }
